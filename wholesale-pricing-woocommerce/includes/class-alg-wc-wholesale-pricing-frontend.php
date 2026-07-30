@@ -2,10 +2,10 @@
 /**
  * Product Price by Quantity for WooCommerce - Frontend Class
  *
- * @version 4.0.1
+ * @version 4.1.0
  * @since   2.0.0
  *
- * @author  Algoritmika Ltd.
+ * @author  WPFactory
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -32,16 +32,30 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 
 		// Cart items: Item price
 		if ( 'yes' === get_option( 'alg_wc_wholesale_pricing_show_info_on_cart', 'no' ) ) {
-			add_filter( 'woocommerce_cart_item_price', array( $this, 'add_discount_info_to_cart_page_item_price' ), PHP_INT_MAX, 3 );
+			add_filter(
+				'woocommerce_cart_item_price',
+				array( $this, 'add_discount_info_to_cart_page_item_price' ),
+				PHP_INT_MAX,
+				3
+			);
 		}
 
 		// Price display by quantity
 		if ( 'yes' === get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_enabled', 'no' ) ) {
 			// AJAX
-			add_action( 'wp_ajax_'        . 'alg_wc_wholesale_pricing_price_by_qty_display', array( $this, 'ajax_price_display_by_qty' ) );
-			add_action( 'wp_ajax_nopriv_' . 'alg_wc_wholesale_pricing_price_by_qty_display', array( $this, 'ajax_price_display_by_qty' ) );
+			add_action(
+				'wp_ajax_'        . 'alg_wc_wholesale_pricing_price_by_qty_display',
+				array( $this, 'ajax_price_display_by_qty' )
+			);
+			add_action(
+				'wp_ajax_nopriv_' . 'alg_wc_wholesale_pricing_price_by_qty_display',
+				array( $this, 'ajax_price_display_by_qty' )
+			);
 			// Scripts
-			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts_price_display_by_qty' ) );
+			add_action(
+				'wp_enqueue_scripts',
+				array( $this, 'enqueue_scripts_price_display_by_qty' )
+			);
 		}
 
 	}
@@ -64,7 +78,7 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 	/**
 	 * ajax_price_display_by_qty.
 	 *
-	 * @version 4.0.0
+	 * @version 4.1.0
 	 * @since   1.3.0
 	 *
 	 * @todo    (dev) grouped products
@@ -76,23 +90,29 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 	function ajax_price_display_by_qty() {
 
 		if (
-			isset( $_POST['alg_wc_wholesale_pricing_qty'] ) &&
-			'' !== $_POST['alg_wc_wholesale_pricing_qty'] &&
-			! empty( $_POST['alg_wc_wholesale_pricing_id'] )
+			isset( $_POST['alg_wc_wholesale_pricing_qty'] ) && // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'' !== $_POST['alg_wc_wholesale_pricing_qty'] && // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			! empty( $_POST['alg_wc_wholesale_pricing_id'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		) {
 
-			$quantity    = floatval( $_POST['alg_wc_wholesale_pricing_qty'] );
-			$_product_id = intval( $_POST['alg_wc_wholesale_pricing_id'] );
+			$quantity    = floatval( $_POST['alg_wc_wholesale_pricing_qty'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$_product_id = intval( $_POST['alg_wc_wholesale_pricing_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			$product     = wc_get_product( $_product_id );
 			$product_id  = $this->get_core()->get_product_id( $product );
 
 			if ( $product_id ) {
 
 				// Get placeholders
-				$discount         = ( $this->get_core()->is_enabled( $product_id ) ?
-					$this->get_core()->get_discount_by_quantity( $quantity, $product_id ) : 0 );
+				$discount         = (
+					$this->get_core()->is_enabled( $product_id ) ?
+					$this->get_core()->get_discount_by_quantity( $quantity, $product_id ) :
+					0
+				);
 				$discount_type    = $this->get_core()->get_discount_type( $product_id, $quantity );
-				$old_price_single = $this->get_core()->maybe_convert_currency( wc_get_price_to_display( $product ), $discount_type );
+				$old_price_single = $this->get_core()->maybe_convert_currency(
+					wc_get_price_to_display( $product ),
+					$discount_type
+				);
 				if ( false !== $discount ) {
 
 					$discount = $this->get_core()->maybe_convert_currency( $discount, $discount_type );
@@ -108,7 +128,9 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 							break;
 
 						default: // 'fixed'
-							$new_price_single = ( $this->get_core()->maybe_convert_currency( $product->get_price(), $discount_type ) - $discount );
+							$new_price_single = (
+								$this->get_core()->maybe_convert_currency( $product->get_price(), $discount_type ) - $discount
+							);
 							$new_price_single = wc_get_price_to_display( $product, array( 'price' => $new_price_single ) );
 							break;
 
@@ -169,13 +191,17 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 				$result = str_replace( array_keys( $placeholders ), $placeholders, $template );
 
 				// Apply filters
-				echo apply_filters( 'alg_wc_wholesale_pricing_ajax_price_display_by_qty', $result,
-					array(
-						'placeholders' => $placeholders,
-						'template'     => $template,
-						'product_id'   => $product_id,
-						'quantity'     => $quantity,
-						'discount'     => $discount,
+				echo wp_kses_post(
+					apply_filters(
+						'alg_wc_wholesale_pricing_ajax_price_display_by_qty',
+						$result,
+						array(
+							'placeholders' => $placeholders,
+							'template'     => $template,
+							'product_id'   => $product_id,
+							'quantity'     => $quantity,
+							'discount'     => $discount,
+						)
 					)
 				);
 
@@ -191,11 +217,11 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 	/**
 	 * enqueue_scripts_price_display_by_qty.
 	 *
-	 * @version 3.7.4
+	 * @version 4.1.0
 	 * @since   1.3.0
 	 */
 	function enqueue_scripts_price_display_by_qty() {
-		if (
+		$do_enqueue = (
 			apply_filters( 'alg_wc_ppq_price_display_by_qty_is_product', is_product() ) &&
 			( $product_id = apply_filters( 'alg_wc_ppq_price_display_by_qty_product_id', get_the_ID() ) ) &&
 			( $product = wc_get_product( $product_id ) ) &&
@@ -203,21 +229,33 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 				'yes' === get_option( 'alg_wc_wholesale_pricing_price_by_qty_all_products', 'yes' ) ||
 				$this->get_core()->is_enabled( $product_id )
 			)
-		) {
-			$min_suffix = ( defined( 'WP_DEBUG' ) && true === WP_DEBUG ? '' : '.min' );
-			wp_enqueue_script(  'alg-wc-wholesale-pricing-price-by-qty-display',
-				trailingslashit( alg_wc_wholesale_pricing()->plugin_url() ) . 'includes/js/alg-wc-wholesale-pricing-price-by-qty-display' . $min_suffix . '.js',
-				array( 'jquery' ),
-				alg_wc_wholesale_pricing()->version,
-				true
-			);
-			wp_localize_script( 'alg-wc-wholesale-pricing-price-by-qty-display',
-				'alg_wc_wh_pr_pbqd_obj', apply_filters( 'alg_wc_ppq_price_display_by_qty_localize_script_args', array(
+		);
+		if ( ! $do_enqueue ) {
+			return;
+		}
+
+		$min_suffix = ( defined( 'WP_DEBUG' ) && true === WP_DEBUG ? '' : '.min' );
+		wp_enqueue_script(
+			'alg-wc-wholesale-pricing-price-by-qty-display',
+			alg_wc_wholesale_pricing()->plugin_url() . '/assets/js/alg-wc-wholesale-pricing-price-by-qty-display' . $min_suffix . '.js',
+			array( 'jquery' ),
+			alg_wc_wholesale_pricing()->version,
+			true
+		);
+		wp_localize_script(
+			'alg-wc-wholesale-pricing-price-by-qty-display',
+			'alg_wc_wh_pr_pbqd_obj',
+			apply_filters(
+				'alg_wc_ppq_price_display_by_qty_localize_script_args',
+				array(
 					'ajax_url'                     => admin_url( 'admin-ajax.php' ),
 					'product_id'                   => $product_id,
 					'product_type'                 => $product->get_type(),
-					'is_variable_different_prices' => ( ( 'yes' === get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_in_variation', 'yes' ) ) &&
-						$product->is_type( 'variable' ) && $product->get_variation_price( 'min' ) != $product->get_variation_price( 'max' ) ),
+					'is_variable_different_prices' => (
+						( 'yes' === get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_in_variation', 'yes' ) ) &&
+						$product->is_type( 'variable' ) &&
+						$product->get_variation_price( 'min' ) != $product->get_variation_price( 'max' )
+					),
 					'product_price_default'        => $product->get_price_html(),
 					'position'                     => get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_position', 'instead' ),
 					'interval_ms'                  => get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_interval_ms', 500 ),
@@ -225,15 +263,16 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 					'price_identifier'             => get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_id', 'p.price' ),
 					'price_identifier_variation'   => get_option( 'alg_wc_wholesale_pricing_price_by_qty_display_id_variation', 'div.woocommerce-variation-price span.price' ),
 					'is_sticky_add_to_cart'        => ( 'yes' === get_option( 'alg_wc_wholesale_pricing_price_by_qty_sitcky_add_to_cart', 'no' ) ),
-				), $product )
-			);
-		}
+				),
+				$product
+			)
+		);
 	}
 
 	/**
 	 * get_placeholders.
 	 *
-	 * @version 4.0.1
+	 * @version 4.0.6
 	 * @since   2.0.0
 	 *
 	 * @todo    (dev) handle deprecated placeholders here
@@ -289,8 +328,8 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 			$args['discount'] :
 			0
 		);
-		$formatted_new_price_single = number_format(
-			$args['new_price_single'],
+		$formatted_new_price_total = number_format(
+			$args['new_price_single'] * $args['quantity'],
 			wc_get_price_decimals(),
 			'.',
 			''
@@ -311,7 +350,7 @@ class Alg_WC_Wholesale_Pricing_Frontend {
 				array( 'currency' => $args['currency'] )
 			),
 			'%new_price_total%'     => wc_price(
-				$formatted_new_price_single * $args['quantity'],
+				$formatted_new_price_total,
 				array( 'currency' => $args['currency'] )
 			),
 			'%discount_percent%'    => $discount_percent,
